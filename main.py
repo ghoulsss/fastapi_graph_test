@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel
 from models import Base, Person
-from sqlalchemy import select, func, or_
+from sqlalchemy import delete, select, func, or_
 
 
 app = FastAPI()
@@ -43,11 +43,22 @@ class PersonOut(BaseModel):
 
 @app.post("/persons/", response_model=PersonOut, summary="Создание человека")
 async def create_person(person: PersonIn, db: AsyncSession = Depends(get_db)):
-    db_person = Person(**person.dict())
+    db_person = Person(**person)
     db.add(db_person)
     await db.commit()
     await db.refresh(db_person)
     return db_person, {"succes": True}
+
+
+@app.delete("/persons/{person_id}", summary="Удалить человека по id")
+async def delete_person(person_id: int, db: AsyncSession = Depends(get_db)):
+    person = await db.get(Person, person_id)
+    if not person:
+        raise HTTPException(status_code=404, detail="Человека не существует")
+
+    await db.execute(delete(Person).where(Person.id == person_id))
+    await db.commit()
+    return {"success": True}
 
 
 @app.get("/persons/", response_model=list[PersonOut], summary="Список людей")
