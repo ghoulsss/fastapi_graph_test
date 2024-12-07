@@ -1,0 +1,10 @@
+services:
+  app:
+    container_name: fastapi_graph
+    build: ./
+    command: sbashh -c "python3 main.py"
+    ports:
+      - 8000:8000
+    restart: always
+    # env_file:
+    #   - .env
