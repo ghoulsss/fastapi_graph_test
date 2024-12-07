@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -7,13 +8,10 @@ from pydantic import BaseModel
 from models import Base, Person
 from sqlalchemy import delete, select, func, or_
 
-
 app = FastAPI()
 
+DATABASE_URL = "sqlite+aiosqlite:///./genealogy.db"
 
-DATABASE_URL = "sqlite+aiosqlite:///./genealogy.db"  # Используем асинхронный SQLite
-
-# Создание асинхронного движка и сессии
 engine = create_async_engine(DATABASE_URL, echo=True)
 AsyncSessionLocal = sessionmaker(
     bind=engine, class_=AsyncSession, expire_on_commit=False
@@ -25,12 +23,11 @@ async def get_db():
         yield session
 
 
-# Pydantic модели для валидации
 class PersonIn(BaseModel):
     full_name: str
-    gender: str = None  # optional
-    father_id: int = None  # optional
-    mother_id: int = None  # optional
+    gender: str = None
+    father_id: int = None
+    mother_id: int = None
 
 
 class PersonOut(BaseModel):
@@ -43,7 +40,7 @@ class PersonOut(BaseModel):
 
 @app.post("/persons/", response_model=PersonOut, summary="Создание человека")
 async def create_person(person: PersonIn, db: AsyncSession = Depends(get_db)):
-    db_person = Person(**person)
+    db_person = Person(**person.dict())
     db.add(db_person)
     await db.commit()
     await db.refresh(db_person)
@@ -134,7 +131,6 @@ async def get_family_members(db: AsyncSession, person_id: int):
     if person is None:
         return []
 
-    # Узнать всех членов семьи
     father_id = person.father_id
     mother_id = person.mother_id
 

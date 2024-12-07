@@ -14,7 +14,6 @@ class Person(Base):
     father_id = Column(Integer, ForeignKey("persons.id"), nullable=True)
     mother_id = Column(Integer, ForeignKey("persons.id"), nullable=True)
 
-    # Обратите внимание на параметр foreign_keys
     father = relationship(
         "Person", remote_side=[id], foreign_keys=[father_id], backref="children_father"
     )
